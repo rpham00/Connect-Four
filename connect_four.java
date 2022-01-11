@@ -1,168 +1,95 @@
-import java.util.Scanner;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
-/* Game: Connect Four
-* Author: Rachel Pham
-* Direction: Player is given a board. Player must connect four consecutive tiles in 
-*              either vertical, horizontal, or diagonal order
-*/
+public class ConnectFour {
+    int boardWidth = 7;
+    int boardHeight = 7;
+    int totalMovesPlayed;
+    int player1Turn = 1;
+    int player2Turn = 0;
+    int[][] board;
 
-class ConnectFour {
-    public static void main(String[] args) {
-        // Initialize variables
-
-        Scanner in = new Scanner(System.in); // Takes input from terminal
-        char[][] board = new char[6][7]; // double array game board
-        int turn = 1; // turn counter
-        char player = 'R'; // player
-        boolean winner = false; // keeps game going
-
-        System.out.println("\nWelcome to Connect Four\n");
-        System.out.println("How To Play: Player is given a board. Player"
-                + " must connect four consecutive tiles in"
-                + " either vertical, \n horizontal, or diagonal order\n");
-
-        // initialize array
-        for (int row = 0; row < board.length; row++) {
-            for (int col = 0; col < board[0].length; col++) {
-                board[row][col] = ' ';
-            }
-        }
-
-        // play a turn
-        while (winner == false && turn <= 42) {
-            boolean validPlay; // keeps game going
-            int input; // stores input from terminal + convert string to int
-
-            do {
-                // display current game board
-                display(board);
-
-                System.out.print("Player " + player + ", choose a column: ");
-                input = in.nextInt();
-
-                // validate play
-                validPlay = validate(input, board);
-
-            } while (validPlay == false);
-
-            // drop the checker
-            for (int row = board.length - 1; row >= 0; row--) {
-                if (board[row][input] == ' ') {
-                    board[row][input] = player;
-                    break;
-                }
-            }
-
-            // determine if there is a winner
-            winner = isWinner(player, board);
-
-            // switch players
-            if (player == 'R') {
-                player = 'B';
-            } else {
-                player = 'R';
-            }
-
-            turn++;
-        }
-
-        // Calls method to display game board
-        display(board);
-
-        // Congratulations Message
-        if (winner) {
-            if (player == 'R') {
-                System.out.println("Black Player Won\n");
-            } else {
-                System.out.println("Red Player Won\n");
-            }
-        } else {
-            System.out.println("Both Players lost\n");
-        }
-
+    public ConnectFour(int boardWidth, int boardHeight) {
+        board = new int[boardHeight][boardWidth];
+        totalMovesPlayed = 0;
     }
 
-    // Method to display game board
-    public static void display(char[][] grid) {
-        System.out.println(" 0 1 2 3 4 5 6");
-        System.out.println("---------------");
-        for (int row = 0; row < grid.length; row++) {
-            System.out.print("|");
-            for (int col = 0; col < grid[0].length; col++) {
-                System.out.print(grid[row][col]);
-                System.out.print("|");
+    public void reset() {
+        totalMovesPlayed = 0;
+        for (int q = 0; q < boardWidth; q++) {
+            for (int w = 0; w < boardHeight; w++) {
+                board[q][w] = 0;
             }
-            System.out.println();
-            System.out.println("---------------");
         }
-        System.out.println(" 0 1 2 3 4 5 6");
+    }
+
+    // run Connect 4 in the GUI
+    public void runBoard(int column) {
+        // Player 1
+        if (player1Turn == 1) {
+            System.out.println("\n\nPlayer 1 play:");
+            if (isPlayable(column)) {
+                player1Turn = 0;
+                player2Turn = 1;
+                if (playMove(column, 1)) {
+                    printBoard();
+                    System.out.println("\n\nPlayer 1 wins!!!");
+                    player1Turn = 3;
+                    player2Turn = 0;
+                }
+            } else {
+                System.out.println("Column " + column + " is already full!!");
+            }
+            printBoard();
+        }
+
+        // Player 2
+        else if (player2Turn == 1) {
+            System.out.println("\n\nPlayer 2 play:");
+            player1Turn = 1;
+            player2Turn = 0;
+            if (isPlayable(column)) {
+                if (playMove(column, 2)) {
+                    printBoard();
+                    System.out.println("\n\nPlayer 2  wins!!!");
+                    player1Turn = 0;
+                    player2Turn = 3;
+                }
+            } else {
+                System.out.println("Column " + column + " is already full!!");
+            }
+            printBoard();
+        }
+
+        if (isFull()) {
+            player1Turn = 4;
+            player2Turn = 4;
+            System.out.print("Game drawn. Both of you suck at this!!! ");
+        }
+    }
+
+    public void printBoard() {
+        for (int i = 0; i < board.length; i++) {
+            for (int j = 0; j < board[0].length; j++) {
+                if (board[i][j] == 0) {
+                    System.out.print("_  ");
+                } else {
+                    System.out.print(board[i][j] + "  ");
+                }
+                System.out.println();
+            }
+        }
+
+        for (int i = 0; i < boardWidth; i++) {
+            System.out.print("*  ");
+        }
         System.out.println();
-    }// End of display() method
 
-    // Method to check if space is available
-    public static boolean validate(int column, char[][] grid) {
-        // valid column?
-        if (column < 0 || column > grid[0].length) {
-            return false;
+        for (int i = 0; i < boardWidth; i++) {
+            System.out.print(i + "  ");
         }
+        System.out.println();
+    }
 
-        // full column?
-        if (grid[0][column] != ' ') {
-            return false;
-        }
-
-        return true;
-    }// end of validate() method
-
-    // Method that checks for 4 in a row
-    public static boolean isWinner(char player, char[][] grid) {
-
-        // Check for horizontal win
-        for (int row = 0; row < grid.length; row++) {
-            for (int col = 0; col < grid[0].length - 3; col++) {
-                if (grid[row][col] == player &&
-                        grid[row][col + 1] == player &&
-                        grid[row][col + 2] == player &&
-                        grid[row][col + 3] == player) {
-                    return true;
-                }
-            }
-        }
-        // Check for vertical win
-        for (int row = 0; row < grid.length - 3; row++) {
-            for (int col = 0; col < grid[0].length; col++) {
-                if (grid[row][col] == player &&
-                        grid[row + 1][col] == player &&
-                        grid[row + 2][col] == player &&
-                        grid[row + 3][col] == player) {
-                    return true;
-                }
-            }
-        }
-        // Check for upward diagonal win
-        for (int row = 3; row < grid.length; row++) {
-            for (int col = 0; col < grid[0].length - 3; col++) {
-                if (grid[row][col] == player &&
-                        grid[row - 1][col + 1] == player &&
-                        grid[row - 2][col + 2] == player &&
-                        grid[row - 3][col + 3] == player) {
-                    return true;
-                }
-            }
-        }
-        // Check for downward diagonal
-        for (int row = 0; row < grid.length - 3; row++) {
-            for (int col = 0; col < grid[0].length - 3; col++) {
-                if (grid[row][col] == player &&
-                        grid[row + 1][col + 1] == player &&
-                        grid[row + 2][col + 2] == player &&
-                        grid[row + 3][col + 3] == player) {
-                    return true;
-                }
-            }
-        }
-
-        // Returns false if there is no winnerd detected
-        return false;
-    }// end of isWinner() method
 }
